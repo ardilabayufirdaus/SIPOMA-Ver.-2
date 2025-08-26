@@ -1,12 +1,17 @@
 "use client";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
 import EntriDataStokTable from "@/components/packing-plant/EntriDataStokTable";
 
-const PackingPlantTable = dynamic(
+const PackingPlantTable = nextDynamic(
   () => import("@/components/packing-plant/PackingPlantTable"),
+  { ssr: false }
+);
+
+const PackingAreaList = nextDynamic(
+  () => import("@/components/packing-plant/PackingAreaList"),
   { ssr: false }
 );
 
@@ -36,7 +41,7 @@ export default function PackingPlantPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="prognosa-stok">
-          <div>Placeholder Prognosa Stok</div>
+          <PackingAreaList />
         </TabsContent>
         <TabsContent value="kinerja-logistik">
           <div>Placeholder Kinerja Logistik</div>

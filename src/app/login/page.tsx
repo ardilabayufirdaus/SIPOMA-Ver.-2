@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
@@ -46,12 +47,19 @@ export default function LoginPage() {
         className="w-full max-w-md p-8 rounded-2xl shadow-xl bg-white/90 dark:bg-gray-900/90 border border-gray-200 dark:border-gray-800 flex flex-col items-center z-10"
         style={{ animation: "fadeInUp 0.8s cubic-bezier(.4,2,.3,1)" }}
       >
-        <img
-          src="/sipoma-logo.png"
-          alt="SIPOMA Logo"
-          className="h-20 w-20 rounded-full mb-4 shadow-lg border-2 border-primary-600 bg-white object-contain"
-          style={{ animation: "logoPop 1s cubic-bezier(.4,2,.3,1)" }}
-        />
+        <div className="relative h-20 w-20 mb-4">
+          <Image
+            src="/sipoma-logo.png"
+            alt="SIPOMA Logo"
+            fill
+            sizes="80px"
+            className="rounded-full shadow-lg border-2 border-primary-600 bg-white object-contain"
+            style={{
+              objectFit: "contain",
+              animation: "logoPop 1s cubic-bezier(.4,2,.3,1)",
+            }}
+          />
+        </div>
         <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1 tracking-tight">
           SIPOMA
         </h1>
@@ -175,8 +183,13 @@ export default function LoginPage() {
                 setRegName("");
                 setRegEmail("");
                 setRegPassword("");
-              } catch (err: any) {
-                setRegError(err.message);
+              } catch (err: unknown) {
+                // Narrow unknown to Error-like
+                const message =
+                  err && typeof err === "object" && "message" in err
+                    ? String((err as { message?: unknown }).message)
+                    : String(err);
+                setRegError(message);
               } finally {
                 setRegLoading(false);
               }

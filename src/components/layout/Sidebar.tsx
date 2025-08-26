@@ -30,6 +30,13 @@ const menuConfig = [
     feature: "view",
   },
   {
+    key: "projects",
+    name: "Projects",
+    href: "/projects",
+    icon: "📁",
+    feature: "view",
+  },
+  {
     key: "packing-plant",
     name: "Packing Plant",
     href: "/packing-plant",

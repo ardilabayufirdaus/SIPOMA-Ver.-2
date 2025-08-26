@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/toaster";
 import ClientLayout from "@/components/layout/ClientLayout";
 
-const inter = Inter({ subsets: ["latin"] });
+// Use system/inter fallback instead of next/font to avoid runtime font loader issues
+const inter = { className: "font-sans" };
+
+// Force dynamic rendering for the root layout to avoid prerender-time runtime errors
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "SIPOMA - Sistem Informasi Produksi Management",
@@ -123,7 +126,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`antialiased`}>
         <Providers>
           <ClientLayout>{children}</ClientLayout>
           <Toaster />

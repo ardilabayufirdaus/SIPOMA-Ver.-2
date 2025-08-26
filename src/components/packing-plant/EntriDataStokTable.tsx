@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toaster";
@@ -20,6 +22,25 @@ export default function EntriDataStokTable() {
   const pad = (n: number) => String(n).padStart(2, "0");
   const getDaysInMonth = (y: number, m: number) =>
     new Date(y, m + 1, 0).getDate();
+  // normalize header keys from Excel imports (case-insensitive, space/_ variants)
+  const normalizeKey = (k: string) =>
+    String(k || "")
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "");
+  const parseExcelRow = (r: Record<string, any>) => {
+    const map: Record<string, any> = {};
+    for (const key of Object.keys(r)) {
+      map[normalizeKey(key)] = r[key];
+    }
+    return {
+      tanggal: map.tanggal || map.date || map.tgl || map.tanggal_iso || "",
+      keluar: Number(map.keluar ?? map.stok_keluar ?? map.out ?? 0),
+      akhir: Number(map.akhir ?? map.stok_akhir ?? map.end ?? 0),
+      diterima: Number(map.diterima ?? map.stok_diterima ?? map.received ?? 0),
+      ket: map.ket ?? map.keterangan ?? map.notes ?? "",
+    } as Row;
+  };
   const areaPeriodKey = (aId: number | null, y: number, m: number) =>
     `${aId ?? 0}::${y}-${pad(m + 1)}`;
 
@@ -96,9 +117,15 @@ export default function EntriDataStokTable() {
         } else {
           prevAkhir = Number(rows[idx - 1]?.akhir ?? 0);
         }
-        const akhir = Number(row.akhir ?? 0);
-        const keluar = Number(row.keluar ?? 0);
-        const diterima = akhir - (prevAkhir - keluar);
+        const akhirRaw = row.akhir;
+        const keluarRaw = row.keluar;
+        const akhir = Number(akhirRaw ?? 0);
+        const keluar = Number(keluarRaw ?? 0);
+        // if either keluar or akhir is missing, or akhir is zero, set diterima to 0 per requirement
+        const diterima =
+          akhirRaw == null || keluarRaw == null || Number(akhirRaw) === 0
+            ? 0
+            : akhir - (prevAkhir - keluar);
 
         const payload = {
           plant_id: selectedAreaId,
@@ -152,9 +179,15 @@ export default function EntriDataStokTable() {
       } else {
         prevAkhir = arr[i - 1].akhir;
       }
-      const akhir = Number(r.akhir ?? 0);
-      const keluar = Number(r.keluar ?? 0);
-      const diterima = akhir - (prevAkhir - keluar);
+      const akhirRaw = r.akhir;
+      const keluarRaw = r.keluar;
+      const akhir = Number(akhirRaw ?? 0);
+      const keluar = Number(keluarRaw ?? 0);
+      // skip calculation when akhir is explicitly 0
+      const diterima =
+        akhirRaw == null || keluarRaw == null || Number(akhirRaw) === 0
+          ? 0
+          : akhir - (prevAkhir - keluar);
       return { ...r, diterima };
     });
   };
@@ -194,12 +227,19 @@ export default function EntriDataStokTable() {
         } else {
           prevAkhir = Number(computed[i - 1]?.akhir ?? 0);
         }
+        const akhirRaw = r.akhir;
+        const keluarRaw = r.keluar;
         const akhir = Number(r.akhir ?? 0);
+        const keluar = Number(r.keluar ?? 0);
+        const diterima =
+          akhirRaw == null || keluarRaw == null || Number(akhirRaw) === 0
+            ? 0
+            : Number(r.diterima ?? 0);
         return {
           plant_id: selectedAreaId,
           tanggal: r.tanggal,
-          stok_diterima: Number(r.diterima ?? 0),
-          stok_keluar: Number(r.keluar ?? 0),
+          stok_diterima: diterima,
+          stok_keluar: Number(keluar ?? 0),
           stok_akhir: akhir,
           dead_stock: Number(activeDeadStock ?? 0),
           life_stock: Number(akhir ?? 0) - Number(activeDeadStock ?? 0),
@@ -294,7 +334,10 @@ export default function EntriDataStokTable() {
       }
       const akhir = Number(r.akhir ?? 0);
       const keluar = Number(r.keluar ?? 0);
-      const diterima = akhir - (prevAkhir - keluar);
+      const diterima =
+        r.akhir == null || r.keluar == null || Number(r.akhir) === 0
+          ? 0
+          : akhir - (prevAkhir - keluar);
       return {
         plant_id: selectedAreaId,
         tanggal: r.tanggal,
@@ -365,16 +408,41 @@ export default function EntriDataStokTable() {
       const xlsx = (await import("xlsx")) as any;
       const data = (dbRows ?? []).map((r: any) => ({
         tanggal: String(r.tanggal),
-        diterima: Number(r.stokDiterima ?? 0),
-        keluar: Number(r.stokKeluar ?? 0),
-        akhir: Number(r.stokAkhir ?? 0),
-        dead: Number(r.deadStock ?? 0),
-        life: Number(r.lifeStock ?? 0),
-        ket: r.notes ?? "",
+        "STOK DITERIMA (TON)": Number(r.stokDiterima ?? 0),
+        "STOK KELUAR (TON)": Number(r.stokKeluar ?? 0),
+        "STOK AKHIR (TON)": Number(r.stokAkhir ?? 0),
+        "DEAD STOCK (TON)": Number(r.deadStock ?? 0),
+        "LIFE STOCK (TON)": Number(r.lifeStock ?? 0),
+        KETERANGAN: r.notes ?? "",
       }));
-      const ws = xlsx.utils.json_to_sheet(data);
+
       const wb = xlsx.utils.book_new();
-      xlsx.utils.book_append_sheet(wb, ws, "Sheet1");
+      // create worksheet starting from A4 so we can add meta rows above
+      const ws = xlsx.utils.json_to_sheet(data, { origin: "A4" });
+      // add meta rows
+      const areaName =
+        packingAreas.find((p) => p.id === selectedAreaId)?.nama ??
+        String(selectedAreaId);
+      xlsx.utils.sheet_add_aoa(ws, [[`Area: ${areaName}`]], { origin: "A1" });
+      xlsx.utils.sheet_add_aoa(ws, [[`Periode: ${firstDay} to ${lastDay}`]], {
+        origin: "A2",
+      });
+      // set reasonable column widths
+      ws["!cols"] = [
+        { wch: 15 }, // tanggal
+        { wch: 18 }, // diterima
+        { wch: 18 }, // keluar
+        { wch: 18 }, // akhir
+        { wch: 15 }, // dead
+        { wch: 15 }, // life
+        { wch: 30 }, // ket
+      ];
+
+      xlsx.utils.book_append_sheet(
+        wb,
+        ws,
+        `${areaName}`.slice(0, 31) || "Sheet1"
+      );
       const filename = `stok-area-${selectedAreaId}-${selectedYear}-${
         selectedMonth + 1
       }.xlsx`;
@@ -418,23 +486,28 @@ export default function EntriDataStokTable() {
         if (error) throw error;
         const data = (dbRows ?? []).map((r: any) => ({
           tanggal: String(r.tanggal),
-          diterima: Number(r.stokDiterima ?? 0),
-          keluar: Number(r.stokKeluar ?? 0),
-          akhir: Number(r.stokAkhir ?? 0),
-          dead: Number(r.deadStock ?? 0),
-          life: Number(r.lifeStock ?? 0),
-          ket: r.notes ?? "",
+          "STOK DITERIMA (TON)": Number(r.stokDiterima ?? 0),
+          "STOK KELUAR (TON)": Number(r.stokKeluar ?? 0),
+          "STOK AKHIR (TON)": Number(r.stokAkhir ?? 0),
+          "DEAD STOCK (TON)": Number(r.deadStock ?? 0),
+          "LIFE STOCK (TON)": Number(r.lifeStock ?? 0),
+          KETERANGAN: r.notes ?? "",
         }));
-        const ws = xlsx.utils.json_to_sheet(data);
-        // add meta rows
+
+        const ws = xlsx.utils.json_to_sheet(data, { origin: "A4" });
         xlsx.utils.sheet_add_aoa(ws, [[`Area: ${a.nama}`]], { origin: "A1" });
         xlsx.utils.sheet_add_aoa(ws, [[`Periode: ${firstDay} to ${lastDay}`]], {
           origin: "A2",
         });
-        xlsx.utils.sheet_add_json(ws, data, {
-          origin: "A4",
-          skipHeader: false,
-        });
+        ws["!cols"] = [
+          { wch: 15 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 15 },
+          { wch: 15 },
+          { wch: 30 },
+        ];
         const safeName = String(a.nama).slice(0, 31);
         xlsx.utils.book_append_sheet(wb, ws, safeName || `area-${a.id}`);
       }
@@ -481,24 +554,18 @@ export default function EntriDataStokTable() {
           });
           continue;
         }
-        const dataRows = rows.filter(
-          (r) => r.tanggal || r.TANGGAL || r.date || r.Date
-        );
+        const dataRows = rows.filter((r) => Object.keys(r).length > 0);
         const normalized = dataRows.map((r) => {
-          const tanggalRaw = r.tanggal ?? r.TANGGAL ?? r.date ?? r.Date ?? "";
-          const parsed = new Date(String(tanggalRaw));
-          const tanggal = isNaN(parsed.getTime())
-            ? String(tanggalRaw)
-            : `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(
-                parsed.getDate()
+          const parsed = parseExcelRow(r);
+          // normalize tanggal to ISO yyyy-mm-dd when possible
+          const maybe = parsed.tanggal || "";
+          const dt = new Date(String(maybe));
+          const tanggal = isNaN(dt.getTime())
+            ? String(maybe)
+            : `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(
+                dt.getDate()
               )}`;
-          return {
-            tanggal,
-            keluar: Number(r.keluar ?? r.stok_keluar ?? 0),
-            akhir: Number(r.akhir ?? r.stok_akhir ?? 0),
-            diterima: Number(r.diterima ?? r.stok_diterima ?? 0),
-            ket: r.ket ?? r.notes ?? "",
-          } as Row;
+          return { ...parsed, tanggal } as Row;
         });
         for (const row of normalized) {
           const d = new Date(row.tanggal);
@@ -549,23 +616,24 @@ export default function EntriDataStokTable() {
       const xlsx = (await import("xlsx")) as any;
       const wb = xlsx.read(ab, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = xlsx.utils.sheet_to_json(ws) as any[];
+      const data = xlsx.utils.sheet_to_json(ws, { defval: null }) as any[];
       if (!selectedAreaId)
         return addToast({ type: "error", title: "Pilih area" });
       const mapped: Row[] = data.map((d) => {
-        const tanggalRaw = d.tanggal ?? d.TANGGAL ?? d.date ?? "";
-        const parsed = new Date(String(tanggalRaw));
-        const tanggal = isNaN(parsed.getTime())
-          ? String(tanggalRaw)
-          : `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(
-              parsed.getDate()
+        const parsed = parseExcelRow(d as Record<string, any>);
+        // normalize tanggal
+        const dt = new Date(String(parsed.tanggal || ""));
+        const tanggal = isNaN(dt.getTime())
+          ? String(parsed.tanggal || "")
+          : `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(
+              dt.getDate()
             )}`;
         return {
           tanggal,
-          keluar: Number(d.keluar ?? d.stok_keluar ?? 0),
-          akhir: Number(d.akhir ?? d.stok_akhir ?? 0),
-          diterima: Number(d.diterima ?? d.stok_diterima ?? 0),
-        };
+          keluar: Number(parsed.keluar ?? 0),
+          akhir: Number(parsed.akhir ?? 0),
+          diterima: Number(parsed.diterima ?? 0),
+        } as Row;
       });
       setAreaRows((p) => ({ ...p, [currentKey]: mapped }));
       setPendingSaves((p) => ({ ...p, [currentKey]: true }));
@@ -914,9 +982,22 @@ export default function EntriDataStokTable() {
                   </td>
                   <td className="px-4 py-2 text-right">
                     <div className="w-28 text-right px-2 py-1 text-sm">
-                      {nf.format(
-                        Number(currentRows[idx]?.diterima ?? row.diterima ?? 0)
-                      )}
+                      {(() => {
+                        const keluarVal =
+                          currentRows[idx]?.keluar ?? row.keluar ?? null;
+                        const akhirVal =
+                          currentRows[idx]?.akhir ?? row.akhir ?? null;
+                        const diterimaVal = Number(
+                          currentRows[idx]?.diterima ?? row.diterima ?? 0
+                        );
+                        const display =
+                          keluarVal == null ||
+                          akhirVal == null ||
+                          Number(akhirVal) === 0
+                            ? 0
+                            : diterimaVal;
+                        return nf.format(display);
+                      })()}
                     </div>
                   </td>
                   <td className="px-4 py-2 text-right">
