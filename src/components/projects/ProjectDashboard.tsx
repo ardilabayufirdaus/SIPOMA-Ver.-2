@@ -589,22 +589,26 @@ const ProjectDashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Project Management Dashboard
+          <h1 className="text-3xl font-extrabold text-black">
+            Project Management
           </h1>
-          <p className="text-gray-600 mt-1">
-            Pantau dan kelola semua proyek perusahaan
+          <p className="text-red-700 mt-1 font-semibold">
+            Pantau dan kelola semua proyek Departemen Produksi Klinker & Semen
           </p>
         </div>
         <div className="flex space-x-2">
           <Button
             onClick={() => setShowCreateForm(true)}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-red-600 hover:bg-red-700"
           >
             <Plus className="w-4 h-4 mr-2" />
             Buat Proyek Baru
           </Button>
-          <Button onClick={exportToCSV} variant="outline">
+          <Button
+            onClick={exportToCSV}
+            variant="outline"
+            className="border-gray-200"
+          >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
@@ -717,14 +721,16 @@ const ProjectDashboard = () => {
                               setSelectedProject(project);
                               setViewMode("chart");
                             }}
+                            className="tap-target transition-smooth"
                           >
                             S-Curve
                           </Button>
                           <Tooltip
                             content={
-                              project.status === "Completed" ||
                               project.status === "Cancelled"
-                                ? "Cannot edit completed or cancelled projects"
+                                ? "Cannot edit cancelled project"
+                                : project.status === "Completed"
+                                ? "Edit project (completed)"
                                 : "Edit project"
                             }
                           >
@@ -736,11 +742,9 @@ const ProjectDashboard = () => {
                                   setEditingProject(project);
                                   setShowEditorModal(true);
                                 }}
-                                disabled={
-                                  project.status === "Completed" ||
-                                  project.status === "Cancelled"
-                                }
+                                disabled={project.status === "Cancelled"}
                                 aria-label="Edit project"
+                                className="tap-target transition-smooth"
                               >
                                 <Edit className="w-4 h-4 mr-1" />
                                 Edit
@@ -757,6 +761,7 @@ const ProjectDashboard = () => {
                                   : project
                               )
                             }
+                            className="tap-target transition-smooth"
                           >
                             {selectedProject?.id === project.id
                               ? "Tutup"
@@ -1263,7 +1268,7 @@ const ProjectDashboard = () => {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm table-auto border-collapse min-w-[900px]">
+                <table className="w-full text-sm table-auto border-collapse min-w-[900px] table-min-w">
                   <thead className="bg-white sticky top-0 z-20 shadow-sm">
                     <tr className="text-left border-b">
                       <th className="p-2 w-8 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
@@ -1316,7 +1321,7 @@ const ProjectDashboard = () => {
                           dragOverIndex === idx
                             ? "ring-2 ring-yellow-300 bg-yellow-50"
                             : ""
-                        } hover:shadow-sm hover:bg-gray-100 transition-all`}
+                        } hover:shadow-sm hover:bg-gray-100 transition-smooth`}
                         data-idx={idx}
                         draggable
                         onDragStart={(e) => onRowDragStart(e, idx)}

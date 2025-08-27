@@ -92,15 +92,15 @@ export default function ProjectList() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-100">
       <div className="flex items-center justify-between mb-4">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-red-700 font-semibold">
           Projects ({projects.length})
         </div>
         <div>
           <button
             onClick={() => startEdit()}
-            className="bg-blue-600 text-white px-3 py-1 rounded"
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md shadow-sm tap-target transition-smooth focus-ring-red"
           >
             + New
           </button>
@@ -114,28 +114,31 @@ export default function ProjectList() {
           ) : projects.length === 0 ? (
             <div className="text-sm text-gray-500">No projects yet</div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {projects.map((p: any) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between p-2 border rounded"
+                  className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:shadow-md transition-smooth bg-white"
                 >
                   <div>
-                    <div className="font-medium">{p.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {p.code} • {p.description}
+                    <div className="font-semibold text-gray-900">{p.name}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      <span className="text-red-600 font-medium mr-2">
+                        {p.code}
+                      </span>
+                      <span className="text-gray-500">{p.description}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => startEdit(p)}
-                      className="text-sm text-blue-600"
+                      className="text-sm text-red-600 hover:underline tap-target transition-smooth"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => remove(p.id)}
-                      className="text-sm text-red-600"
+                      className="text-sm text-gray-500 hover:text-red-600 tap-target transition-smooth"
                     >
                       Delete
                     </button>
@@ -147,20 +150,22 @@ export default function ProjectList() {
         </div>
 
         <div>
-          <div className="bg-gray-50 p-3 rounded">
-            <h3 className="text-sm font-semibold mb-2">Project details</h3>
-            <div className="space-y-2">
+          <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+            <h3 className="text-sm font-semibold mb-3 text-gray-900">
+              Project details
+            </h3>
+            <div className="space-y-3">
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Name"
-                className="w-full border rounded px-2 py-1"
+                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-100"
               />
               <input
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
                 placeholder="Code"
-                className="w-full border rounded px-2 py-1"
+                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-100"
               />
               <textarea
                 value={form.description}
@@ -168,22 +173,23 @@ export default function ProjectList() {
                   setForm({ ...form, description: e.target.value })
                 }
                 placeholder="Description"
-                className="w-full border rounded px-2 py-1"
+                className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-100"
               />
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={Boolean(form.active)}
                   onChange={(e) =>
                     setForm({ ...form, active: e.target.checked })
                   }
-                />{" "}
+                  className="accent-red-600"
+                />
                 Active
               </label>
               <div className="flex items-center gap-2 mt-2">
                 <button
                   onClick={save}
-                  className="bg-green-600 text-white px-3 py-1 rounded"
+                  className="bg-red-600 text-white px-3 py-1 rounded-md shadow"
                 >
                   Save
                 </button>
@@ -197,7 +203,7 @@ export default function ProjectList() {
                       active: true,
                     });
                   }}
-                  className="bg-gray-200 px-3 py-1 rounded"
+                  className="bg-gray-100 text-gray-700 px-3 py-1 rounded-md border"
                 >
                   Cancel
                 </button>

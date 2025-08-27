@@ -139,26 +139,28 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto border border-gray-100 shadow-lg rounded-xl">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <span>{isEditing ? "Edit Project" : "Create New Project"}</span>
+            <span className="text-lg font-semibold text-gray-900">
+              {isEditing ? "Edit Project" : "Create New Project"}
+            </span>
             {draftSaved && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs text-gray-700">
                 Draft saved
               </Badge>
             )}
           </div>
           {isEditing && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs text-gray-700">
               Editing: {project?.name}
             </Badge>
           )}
         </CardTitle>
 
         {showSuccess && (
-          <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-3 rounded-md">
+          <div className="flex items-center space-x-2 text-white bg-green-600 p-3 rounded-md">
             <CheckCircle2 className="w-5 h-5" />
             <span className="text-sm">
               {isEditing ? "Updated" : "Created"} successfully
@@ -167,7 +169,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         )}
 
         {errors.name && (
-          <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-md">
+          <div className="flex items-center space-x-2 text-red-700 bg-red-50 p-3 rounded-md">
             <AlertCircle className="w-5 h-5" />
             <span className="text-sm">{errors.name}</span>
           </div>
@@ -184,6 +186,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                 onChange={(e) => handleChange("name", e.target.value)}
                 autoFocus
                 required
+                className="border-gray-200 focus-ring-red transition-smooth"
               />
               {errors.name && (
                 <p className="text-sm text-red-600 flex items-center">
@@ -253,6 +256,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                 onChange={(e) =>
                   handleChange("progress", parseInt(e.target.value || "0", 10))
                 }
+                className="focus-ring-red transition-smooth"
               />
               {errors.progress && (
                 <p className="text-sm text-red-600 flex items-center">
@@ -318,7 +322,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           <div>
             <label className="text-sm font-medium">Description</label>
             <textarea
-              className="w-full min-h-[100px] px-3 py-2 text-sm border border-input bg-background rounded-md"
+              className="w-full min-h-[100px] px-3 py-2 text-sm border border-gray-200 bg-white rounded-md focus:ring-2 focus:ring-red-50"
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
             />
@@ -336,7 +340,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="min-w-[120px]"
+              className="min-w-[120px] bg-red-600 text-white hover:bg-red-700 tap-target transition-smooth"
             >
               {isSubmitting ? (
                 <>
