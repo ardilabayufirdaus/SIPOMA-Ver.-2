@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 import { ToastProvider } from "@/components/ui/toaster";
+import * as RadixTooltip from "@radix-ui/react-tooltip";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -36,10 +37,12 @@ export function Providers({ children }: ProvidersProps) {
         enableSystem
         disableTransitionOnChange
       >
-        <ToastProvider>
-          {children}
-          <ReactQueryDevtools initialIsOpen={false} />
-        </ToastProvider>
+        <RadixTooltip.Provider>
+          <ToastProvider>
+            {children}
+            <ReactQueryDevtools initialIsOpen={false} />
+          </ToastProvider>
+        </RadixTooltip.Provider>
       </ThemeProvider>
     </QueryClientProvider>
   );

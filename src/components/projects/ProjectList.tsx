@@ -64,14 +64,12 @@ export default function ProjectList() {
           .eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("projects")
-          .insert({
-            name: form.name,
-            code: form.code,
-            description: form.description,
-            active: form.active,
-          });
+        const { error } = await supabase.from("projects").insert({
+          name: form.name,
+          code: form.code,
+          description: form.description,
+          active: form.active,
+        });
         if (error) throw error;
       }
       setEditing(null);
